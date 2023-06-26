@@ -1,13 +1,15 @@
 using System;
 
-public class BlockingInfo<T> : IDisposable where T : IInteractionBlock
+public class BlockingInfo : IDisposable
 {
     public bool IsBlocked { get; private set; }
-    public IInteractionBlock Block  { get; private set; }
+    public IInteractionBlock Block { get; private set; }
+    private readonly string index;
 
-    public BlockingInfo(IInteractionBlock block = null)
+    public BlockingInfo(string index, IInteractionBlock block = null)
     {
-        InteractionsBlocking.Bloked += OnGlobalBlocked;
+        this.index = index;
+        InteractionBlocking.Bloked += OnGlobalBlocked;
         if(block == null) return;
         block.Disposed += OnBlockDisposed;
         IsBlocked = true;
@@ -15,13 +17,13 @@ public class BlockingInfo<T> : IDisposable where T : IInteractionBlock
     }
     public void Dispose()
     {
-        InteractionsBlocking.Bloked -= OnGlobalBlocked;
+        InteractionBlocking.Bloked -= OnGlobalBlocked;
     }
 
-    private void OnGlobalBlocked(Type type, IInteractionBlock block)
+    private void OnGlobalBlocked(string index, IInteractionBlock block)
     {
         if(IsBlocked) return;
-        IsBlocked = type == typeof(T);
+        IsBlocked = index == this.index;
         if(IsBlocked)
         {
             Block = block;
