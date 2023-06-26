@@ -1,0 +1,1 @@
+Standard implementation of the interface control system. Designed to provide a fast and straightforward way to implement user interface windows with a minimal code complexity threshold.

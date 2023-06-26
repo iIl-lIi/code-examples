@@ -1,0 +1,1 @@
+A simple and intuitive system for blocking a specific interaction. It includes a depth parameter for blocking, allowing up to 256 blocking sources. Designed to be versatile and user-friendly.

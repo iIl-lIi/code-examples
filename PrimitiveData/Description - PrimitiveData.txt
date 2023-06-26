@@ -1,0 +1,1 @@
+An example of standard data in the game intended for working with PlayFab. Nothing special or complex. There is also a way to have a more convenient and efficient interaction with PlayFab through the Inspector CustomEditor.

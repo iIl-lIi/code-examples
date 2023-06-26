@@ -1,0 +1,1 @@
+Developed with the goal of quickly animating any objects. It offers great optimization capabilities and two interpolation methods: Parabolic and Bezier Curves. A versatile and straightforward solution.

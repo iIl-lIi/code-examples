@@ -1,0 +1,1 @@
+An FPS object system (flashlight, gun, fishing rod, anything in front of the camera...). The goal was to achieve maximum versatility and create a foundation for all FPS objects in the game. Additionally, the system should be able to drop and pick up items, storing them in an unlimited quantity.

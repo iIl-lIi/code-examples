@@ -1,0 +1,1 @@
+Local data saving system utilizing binary serialization and serialization surrogates for Unity types. Developed with the aim of securely and efficiently storing data on the device.

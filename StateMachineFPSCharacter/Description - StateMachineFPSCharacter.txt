@@ -1,0 +1,1 @@
+An FPS character built on the State Machine pattern. The goal was to create a player, a loading and unloading system for it, and all the basic states for first-person control.
