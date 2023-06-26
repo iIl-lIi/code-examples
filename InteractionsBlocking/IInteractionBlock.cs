@@ -1,6 +1,9 @@
+using System;
+
 public interface IInteractionBlock
 {
-    byte BlockDepth { get; set; }
+    event Action Disposed;
+    byte Depth { get; set; }
 
     void Block();
     bool Unblock();
