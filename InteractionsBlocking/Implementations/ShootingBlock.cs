@@ -13,12 +13,10 @@ public class ShootingBlock : IInteractionBlock
 
     public bool Unblock()
     {
-        if (Depth == byte.MinValue)
-        {
-            Disposed?.Invoke();
-            return false;
-        }
+        if (Depth == byte.MinValue) return false;
         Depth--;
         return true;
     }
+
+    public void Dispose() => Disposed?.Invoke();
 }

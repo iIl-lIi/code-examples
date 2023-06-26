@@ -21,7 +21,11 @@ public static class InteractionsBlocking
     {
         var key = typeof(T);
         if (!blocks.ContainsKey(key)) return;
-        if (!blocks[key].Unblock()) blocks.Remove(key);
+        if (!blocks[key].Unblock())
+        {
+            blocks[key].Dispose();
+            blocks.Remove(key);
+        }
     }
     public static BlockingInfo<T> GetInfo<T>() where T : IInteractionBlock, new ()
     {

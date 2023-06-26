@@ -1,6 +1,6 @@
 using System;
 
-public interface IInteractionBlock
+public interface IInteractionBlock : IDisposable
 {
     event Action Disposed;
     byte Depth { get; set; }
