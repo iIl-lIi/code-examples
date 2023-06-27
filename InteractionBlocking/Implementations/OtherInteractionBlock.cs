@@ -6,9 +6,9 @@ public class OtherInteractionBlock : IInteractionBlock
     public event Action Disposed;
     public byte Depth { get; set; }
     
-    public OtherInteractionBlock()
+    public OtherInteractionBlock(bool value)
     {
-        Debug.Log("Other Interaction Block");
+        Debug.Log($"Value: {value}");
     }
     public void Block()
     {
