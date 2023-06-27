@@ -18,16 +18,17 @@ namespace Game.UI
         [field: SerializeField, Min(float.MinValue)] public float FadeDuration { get; private set; } = 0.25f;
 
         public ElementState State { get; private set; } = ElementState.IsHiden;
-        public CanvasGroup CanvasGroup { get; private set; }
+        public readonly WeakReference<CanvasGroup> CanvasGroup = new (null);
 
         private CancellationTokenSource _cancellationTokenSource;
 
         public virtual void Initialize()
         {
-            CanvasGroup = GetComponent<CanvasGroup>();
-            CanvasGroup.interactable = false;
-            CanvasGroup.blocksRaycasts = false;
-            CanvasGroup.alpha = 0;
+            var canvasGroup = GetComponent<CanvasGroup>();
+            CanvasGroup.SetTarget(canvasGroup);
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.alpha = 0;
             State = ElementState.IsHiden;
         }
         public async UniTask Show()
@@ -35,22 +36,25 @@ namespace Game.UI
             if (State == ElementState.Busy) return;
 
             State = ElementState.Busy;   
-            CanvasGroup.interactable = false;
-            CanvasGroup.blocksRaycasts = false;
+            if(CanvasGroup.TryGetTarget(out var canvasGroup))
+            {
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
             _cancellationTokenSource = new CancellationTokenSource();
             StartShowed?.Invoke(this); 
 
-            while (CanvasGroup.alpha < 1)
+            while (CanvasGroup.TryGetTarget(out canvasGroup) && canvasGroup.alpha < 1)
             {
                 if (_cancellationTokenSource.Token.IsCancellationRequested) break;
-                CanvasGroup.alpha += Time.deltaTime / FadeDuration;
+                canvasGroup.alpha += Time.deltaTime / FadeDuration;
                 await UniTask.Yield();
             }
 
             _cancellationTokenSource.Dispose();
             _cancellationTokenSource = null;
-            CanvasGroup.interactable = true;
-            CanvasGroup.blocksRaycasts = true;
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;
             State = ElementState.IsShown;
             EndShowed?.Invoke(this);
         }
@@ -58,15 +62,18 @@ namespace Game.UI
         {   
             if (State == ElementState.Busy) return;
             State = ElementState.Busy;
-            CanvasGroup.interactable = false;
-            CanvasGroup.blocksRaycasts = false;
+            if(CanvasGroup.TryGetTarget(out var canvasGroup))
+            {   
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
             _cancellationTokenSource = new CancellationTokenSource();
             StartHide?.Invoke(this);
 
-            while (CanvasGroup.alpha > 0)
+            while (CanvasGroup.TryGetTarget(out canvasGroup) && canvasGroup.alpha > 0)
             {
                 if (_cancellationTokenSource.Token.IsCancellationRequested) break;
-                CanvasGroup.alpha -= Time.deltaTime / FadeDuration;
+                canvasGroup.alpha -= Time.deltaTime / FadeDuration;
                 await UniTask.Yield();
             }
 
@@ -77,17 +84,23 @@ namespace Game.UI
         }
         public void ShowImmediate()
         {
-            CanvasGroup.alpha = 1;
-            CanvasGroup.interactable = true;
-            CanvasGroup.blocksRaycasts = true;
+            if(CanvasGroup.TryGetTarget(out var canvasGroup))
+            {
+                canvasGroup.alpha = 1;
+                canvasGroup.interactable = true;
+                canvasGroup.blocksRaycasts = true;
+            }
             State = ElementState.IsShown;
             EndShowed?.Invoke(this);
         }
         public void HideImmediate()
         {
-            CanvasGroup.alpha = 0;
-            CanvasGroup.interactable = false;
-            CanvasGroup.blocksRaycasts = false;
+            if(CanvasGroup.TryGetTarget(out var canvasGroup))
+            {
+                canvasGroup.alpha = 0;
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
             State = ElementState.IsHiden;
             EndHide?.Invoke(this);
         }
