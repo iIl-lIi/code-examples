@@ -1,6 +1,6 @@
 using System;
 
-public class InteractionBlock : IInteractionBlock
+public class BaseInteractionBlock : IInteractionBlock
 {
     public event Action Disposed;
     public byte Depth { get; set; }

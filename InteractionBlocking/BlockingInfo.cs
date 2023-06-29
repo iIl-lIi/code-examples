@@ -9,7 +9,7 @@ public class BlockingInfo : IDisposable
     public BlockingInfo(string index, IInteractionBlock block = null)
     {
         this.index = index;
-        InteractionBlocking.Bloked += OnGlobalBlocked;
+        InteractionBlocking.Bloked += OnBlocked;
         if(block == null) return;
         block.Disposed += OnBlockDisposed;
         IsBlocked = true;
@@ -17,10 +17,10 @@ public class BlockingInfo : IDisposable
     }
     public void Dispose()
     {
-        InteractionBlocking.Bloked -= OnGlobalBlocked;
+        InteractionBlocking.Bloked -= OnBlocked;
     }
 
-    private void OnGlobalBlocked(string index, IInteractionBlock block)
+    private void OnBlocked(string index, IInteractionBlock block)
     {
         if(IsBlocked) return;
         IsBlocked = index == this.index;
