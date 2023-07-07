@@ -106,14 +106,14 @@ namespace Game.Item
         private void OnStateSwitched(IState from, IState to)
         {
             var animationFromName = from.FPSObjectAnimation;
-            var shakerTo = to.FPSObjectAnimation;
-            var onGroundedTo = shakerTo is FPSObjectAnimationType.OnGrounded or FPSObjectAnimationType.OnGroundedRun;
+            var animationTo = to.FPSObjectAnimation;
+            var onGroundedTo = animationTo is FPSObjectAnimationType.OnGrounded or FPSObjectAnimationType.OnGroundedRun;
 
             if (onGroundedTo || FPSState != FPSObjectState.Taken) return;
 
             var animationFrom = AnimatorsController.GetAnimator(animationFromName.ToString());
             var onGroundedFrom = animationFromName is FPSObjectAnimationType.OnGrounded or FPSObjectAnimationType.OnGroundedRun;
-            var isWalkOrCrouchMoveTo = shakerTo is FPSObjectAnimationType.Walk or FPSObjectAnimationType.CrouchMove;
+            var isWalkOrCrouchMoveTo = animationTo is FPSObjectAnimationType.Walk or FPSObjectAnimationType.CrouchMove;
             
             if (animationFrom == null) return;
             if (onGroundedFrom == false) animationFrom.SetFactor(0, _AnimationsFadeDuration, animationFrom.StopAnimation);
@@ -123,7 +123,7 @@ namespace Game.Item
                 _allowControlFactor = false;
             }
             
-            _lastPlayingAnimation = AnimatorsController.GetAnimator(shakerTo.ToString());
+            _lastPlayingAnimation = AnimatorsController.GetAnimator(animationTo.ToString());
             if (animationFrom == null || _lastPlayingAnimation == null) return;
             if (isWalkOrCrouchMoveTo)
             {

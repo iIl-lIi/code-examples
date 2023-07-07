@@ -32,9 +32,6 @@ namespace Game.Character.Implementations.Player
         [SerializeField] private float _CameraAngleUpLimit;
         [SerializeField] private float _CameraAngleDownLimit;
         [SerializeField] private Vector3 _CameraDownLookPosition;
-
-        [Space]
-        [SerializeField] private List<AddTransform> _AddTransforms = new List<AddTransform>();
         
         public Transform RootTransform { get; set; }
         public Vector3 GravityValue { get; set; }
@@ -45,7 +42,7 @@ namespace Game.Character.Implementations.Player
         public bool InMovement { get; set; }
         public Vector3 LastDamagerPosition { get; set; }
         public bool IsDeath { get; set; }
-        public List<AddTransform> AddTransforms { get => _AddTransforms; set => _AddTransforms = value; }
+        [field: SerializeField] public List<AddOffset> AddOffsets { get; set; }
         public Camera Camera { get => _Camera; set => _Camera = value; }
         public BasePlayerController PlayerController => _PlayerController;
         public CharacterController CharacterController => _Controller;
@@ -64,6 +61,9 @@ namespace Game.Character.Implementations.Player
         private Vector3 _cameraPosition;
         private Vector3 _jumpVelocity;
         private Vector2 _cameraRotateVelocity;
+
+        private readonly Lazy<BlockingInfo> _movementBlock = 
+            new (() => InteractionBlocking.GetInfo(Constants.PlayerMovementBlock));
         
         private float _cameraVerticalAngle;
         private float _cameraHorizontalAngle;
@@ -114,6 +114,11 @@ namespace Game.Character.Implementations.Player
         }
         public void Move(Vector2 velocity)
         {
+            if(_movementBlock.Value.IsBlocked)
+            {
+                MovementVelocity = Vector2.zero;
+                return;
+            }
             MovementVelocity = velocity;
         }
         public void StopMove()
@@ -184,20 +189,18 @@ namespace Game.Character.Implementations.Player
 
             var addPosition = Vector3.zero;
             var addRotation = Quaternion.identity;
-            _AddTransforms.ForEach(x =>
+            
+            foreach (var item in AddOffsets)
             {
-                if (x.Transform == null) return;
-                switch (x.UseParameters)
+                switch (item.UseParameters)
                 {
                     case UseTransformParameters.Everything:
-                        addPosition += x.Transform.localPosition + x.OffsetPosition; 
-                        addRotation *= x.Transform.localRotation * Quaternion.Euler(x.OffsetRotation); break;
-                    case UseTransformParameters.Position:
-                        addPosition += x.Transform.localPosition + x.OffsetPosition; break;
-                    case UseTransformParameters.Rotation:
-                        addRotation *= x.Transform.localRotation * Quaternion.Euler(x.OffsetRotation); break;
+                        addPosition += item.GetPosition() + item.OffsetPosition; 
+                        addRotation *= item.GetRotation() * Quaternion.Euler(item.OffsetRotation); break;
+                    case UseTransformParameters.Position: addPosition += item.GetPosition() + item.OffsetPosition; break;
+                    case UseTransformParameters.Rotation: addRotation *= item.GetRotation() * Quaternion.Euler(item.OffsetRotation); break;
                 }
-            });
+            }
             
             var camPos = _cameraPosition + _CameraDownLookPosition * CameraDownLookFactor + addPosition;
             _Camera.transform.localPosition -= (_Camera.transform.localPosition - camPos) * Time.deltaTime * 24;

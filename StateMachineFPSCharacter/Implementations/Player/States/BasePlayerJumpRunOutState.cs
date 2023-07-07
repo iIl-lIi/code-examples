@@ -1,16 +1,16 @@
-﻿using Game.FPSObject;
-using Game.StateMachine.Player;
+﻿using Game.Item;
+using Game.PlayerStateMachine;
 
 namespace Game.Character.Implementations.Player.States
 {
-    public class BasePlayerJumpRunOutState : IBaseState
+    public class BasePlayerJumpRunOutState : IState
     { 
-        public FPSObjectShakerType FPSObjectShaker { get; set; } = FPSObjectShakerType.OnGroundedRun;
+        public FPSObjectAnimationType FPSObjectAnimation { get; set; } = FPSObjectAnimationType.OnGroundedRun;
         
-        public void Enter(IBaseState fromState)
+        public void Enter(IState fromState)
         {
         }
-        public void Exit(IBaseState toState)
+        public void Exit(IState toState)
         {
         }
         public void Update()

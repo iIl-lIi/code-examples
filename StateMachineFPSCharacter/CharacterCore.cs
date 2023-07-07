@@ -12,18 +12,18 @@ namespace Game.Character
         Rotation = 2
     }
 
-    [Serializable] public struct AddTransform
+    [Serializable] public class AddOffset
     {
         public UseTransformParameters UseParameters;
-        public Transform Transform;
         public Vector3 OffsetPosition;
         public Vector3 OffsetRotation;
+        public Func<Vector3> GetPosition = () => Vector3.zero;
+        public Func<Quaternion> GetRotation = () => Quaternion.identity;
     }
-
     public interface ICameraRotate
     {
         Camera Camera { get; set; }
-        List<AddTransform> AddTransforms { get; set; }
+        List<AddOffset> AddOffsets { get; set; }
         void RotateCamera(Vector3 velocity);
     }
     public interface IMovable

@@ -1,15 +1,15 @@
-﻿using Game.FPSObject;
-using Game.StateMachine.Player;
+﻿using Game.Item;
+using Game.PlayerStateMachine;
 using OtherTools._3D.TransformAnimatorSystem;
 
 namespace Game.Character.Implementations.Player.States
 {
-    public class BasePlayerCrouchMoveState : IBaseState
+    public class BasePlayerCrouchMoveState : IState
     {
         private const string CAMERA_SHAKER_NAME = "CrouchMoveCamera";
         private const float CAMERA_SHAKER_CROSS_FADE_DURATION = 0.1f;
         
-        public FPSObjectShakerType FPSObjectShaker { get; set; } = FPSObjectShakerType.CrouchMove;
+        public FPSObjectAnimationType FPSObjectAnimation { get; set; } = FPSObjectAnimationType.CrouchMove;
         
         private readonly BasePlayerController _playerController;
         private readonly TransformAnimator _shaker;
@@ -18,22 +18,23 @@ namespace Game.Character.Implementations.Player.States
         public BasePlayerCrouchMoveState(TransformAnimatorsController animatorController, BasePlayerController playerController)
         {
             this._playerController = playerController;
-            _shaker = animatorController.GetShaker(CAMERA_SHAKER_NAME);
-            
-            playerController.TargetPlayerCharacter.AddTransforms.Add(new AddTransform()
+
+            _shaker = animatorController.GetAnimator(CAMERA_SHAKER_NAME);
+            playerController.TargetPlayerCharacter.AddOffsets.Add(new AddOffset()
             {
                 UseParameters = UseTransformParameters.Everything,
-                Transform = _shaker.Target
+                GetPosition = () => _shaker.Target.localPosition,
+                GetRotation = () => _shaker.Target.localRotation
             });
         }
 
-        public void Enter(IBaseState fromState)
+        public void Enter(IState fromState)
         {
             _playerController.TargetPlayerCharacter.Crouch(true);
             _shaker.StartAnimation();
             _allowControlFactor = true;
         }
-        public void Exit(IBaseState toState)
+        public void Exit(IState toState)
         {
             _allowControlFactor = false;
             _shaker.StopAnimation();

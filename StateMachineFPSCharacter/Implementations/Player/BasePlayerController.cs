@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Game.Character.Implementations.Player.States;
-using Game.FPSObject;
-using Game.FPSObject.Implementations;
+using Game.Item;
 using Game.Input;
-using Game.StateMachine.Player;
+using Game.PlayerStateMachine;
 using OtherTools._3D.TransformAnimatorSystem;
 using UnityEngine;
 
@@ -14,7 +13,6 @@ namespace Game.Character.Implementations.Player
     {
         [Header("Player Movement")]
         [SerializeField] private BasePlayerCharacter _TargetPlayerCharacter;
-        [SerializeField] private FPSObjectsController _TargetPlayerFPSObjectsController;
         [SerializeField] private float _SpeedMove = 1.5f;
         [SerializeField] private float _SprintSpeedMultiplier = 3.5f;
         [SerializeField] private float _CrouchSpeedMultiplier = 0.75f;
@@ -37,12 +35,12 @@ namespace Game.Character.Implementations.Player
         #endregion
         
         #region StateMachine
-        public event Action<IBaseState, IBaseState> StateSwitched;
-        public event Action<IBaseState> GroundedFromState;
-        public IBaseState CurrentState {get; set; }
-        public List<IBaseState> States {get; set; }
+        public event Action<IState, IState> StateSwitched;
+        public event Action<IState> GroundedFromState;
+        public IState CurrentState {get; set; }
+        public List<IState> States {get; set; }
         
-        public void SwitchState<T>() where T : IBaseState
+        public void SwitchState<T>() where T : IState
         {
             foreach (var item in States)
             {
@@ -71,7 +69,7 @@ namespace Game.Character.Implementations.Player
             }
 #endif
         }
-        private void SwitchState(IBaseState toState)
+        private void SwitchState(IState toState)
         {
             if (toState == null) return;
 #if UNITY_DEBUG
@@ -86,11 +84,12 @@ namespace Game.Character.Implementations.Player
             CurrentState = toState;
             toState.Enter(fromState);
             StateSwitched?.Invoke(fromState, toState);
+            EventsBus.Player.StateSwitched.Invoke(fromState, toState);
         }
 
         private void SetStates()
         {
-            States = new List<IBaseState>()
+            States = new List<IState>()
             {
                 new BasePlayerIdleState      (_AnimatorsController, this),
                 new BasePlayerWalkState      (_AnimatorsController, this),
@@ -132,7 +131,7 @@ namespace Game.Character.Implementations.Player
             if (IsMove 
                 || IsCrouch == false 
                 || _TargetPlayerCharacter.IsGrounded == false
-                || CurrentState.FPSObjectShaker == FPSObjectShakerType.CrouchIdle) 
+                || CurrentState.FPSObjectAnimation == FPSObjectAnimationType.CrouchIdle) 
                 return;
             
             SwitchState<BasePlayerCrouchIdleState>();
@@ -149,13 +148,13 @@ namespace Game.Character.Implementations.Player
             if (_playerMovementInput == null) return;
             var movementValue = _playerMovementInput.Value;
             var isGroundedIdle = _TargetPlayerCharacter.IsCrouch == false && _TargetPlayerCharacter.IsGrounded;
-            var isIdle = CurrentState.FPSObjectShaker == FPSObjectShakerType.Idle;
+            var isShakerIdle = CurrentState.FPSObjectAnimation == FPSObjectAnimationType.Idle;
             IsMove = movementValue != Vector2.zero;
             var xSprint = Mathf.Abs(movementValue.x) < PLAYER_MOVEMENT_JOYSTICK_SPRINT_RESET_VALUE;
             var stickSprint = movementValue.y > 0 && _playerMovementInput.StickValue >= PLAYER_MOVEMENT_JOYSTICK_SPRINT_VALUE;
             IsSprint = xSprint && stickSprint;
 
-            if (IsMove && isIdle && isGroundedIdle)
+            if (IsMove && isShakerIdle && isGroundedIdle)
             {
                 if (_TargetPlayerCharacter.IsGrounded)
                 {
@@ -209,17 +208,21 @@ namespace Game.Character.Implementations.Player
         }
         private void OnPutAwayFPSObject(IFPSObject obj)
         {
-            
+            // Code for fix animation bug 
+            // in BaseFPSObject when Player Character
+            // puted away BaseFPSObject not from Idle state
         }
         private void OnTakenUpFPSObject(IFPSObject obj)
         {
-            
+            // Code for fix animation bug 
+            // in BaseFPSObject when Player Character
+            // taken up BaseFPSObject not from Idle state
         }
         private void OnGroundedFromState()
         {
-            if(CurrentState.FPSObjectShaker == FPSObjectShakerType.OnGroundedRun)
+            if(CurrentState.FPSObjectAnimation == FPSObjectAnimationType.OnGroundedRun)
                 _AnimatorsController.Play(CAMERA_ON_GROUNDED_RUN_SHAKER_NAME, CAMERA_ON_GROUNDED_RUN_SHAKER_FADE_IN_DURATION);
-            else if(CurrentState.FPSObjectShaker == FPSObjectShakerType.OnGrounded)
+            else if(CurrentState.FPSObjectAnimation == FPSObjectAnimationType.OnGrounded)
                 _AnimatorsController.Play(CAMERA_ON_GROUNDED_SHAKER_NAME, CAMERA_ON_GROUNDED_SHAKER_FADE_IN_DURATION);
             
             GroundedFromState?.Invoke(CurrentState);
@@ -247,27 +250,32 @@ namespace Game.Character.Implementations.Player
         {
             SetStates();
             SwitchState<BasePlayerIdleState>();
-            _TargetPlayerCharacter.Grounded                 += OnGrounded;
-            _TargetPlayerFPSObjectsController.TakenUpObject += OnTakenUpFPSObject;
-            _TargetPlayerFPSObjectsController.PutAwayObject += OnPutAwayFPSObject;
-            InputManager.SettedPlayerMovementInput          += OnSettedPlayerMovementInput;
-            InputManager.SettedPlayerCameraRotateInput      += OnSettedPlayerCameraRotateInput;
-            InputManager.SettedPlayerJumpInput              += OnSettedPlayerJumpInput;
-            InputManager.SettedPlayerCrouchInput            += OnSettedPlayerCrouchInput;
+            _TargetPlayerCharacter.Grounded            += OnGrounded;
+            EventsBus.FPSObject.TakenUp.Event          += OnTakenUpFPSObject;
+            EventsBus.FPSObject.PutedAway.Event        += OnPutAwayFPSObject;
+            InputManager.SettedPlayerMovementInput     += OnSettedPlayerMovementInput;
+            InputManager.SettedPlayerCameraRotateInput += OnSettedPlayerCameraRotateInput;
+            InputManager.SettedPlayerJumpInput         += OnSettedPlayerJumpInput;
+            InputManager.SettedPlayerCrouchInput       += OnSettedPlayerCrouchInput;
 
-            var addTransformOnGrounded = new AddTransform() 
+            var targetGround = _AnimatorsController.GetAnimator(CAMERA_ON_GROUNDED_SHAKER_NAME).Target;
+            var targetGroundRun = _AnimatorsController.GetAnimator(CAMERA_ON_GROUNDED_RUN_SHAKER_NAME).Target;
+            var addTransformOnGrounded = new AddOffset() 
             {
                 UseParameters = UseTransformParameters.Everything,
-                Transform = _AnimatorsController.GetShaker(CAMERA_ON_GROUNDED_SHAKER_NAME).Target
+                GetPosition = () => targetGround.localPosition,
+                GetRotation = () => targetGround.localRotation
+                
             };
-            var addTransformOnGroundedRun = new AddTransform()
+            var addTransformOnGroundedRun = new AddOffset()
             {
                 UseParameters = UseTransformParameters.Everything,
-                Transform = _AnimatorsController.GetShaker(CAMERA_ON_GROUNDED_RUN_SHAKER_NAME).Target
+                GetPosition = () => targetGroundRun.localPosition,
+                GetRotation = () => targetGroundRun.localRotation
             };
             
-            _TargetPlayerCharacter.AddTransforms.Add(addTransformOnGrounded);
-            _TargetPlayerCharacter.AddTransforms.Add(addTransformOnGroundedRun);
+            _TargetPlayerCharacter.AddOffsets.Add(addTransformOnGrounded);
+            _TargetPlayerCharacter.AddOffsets.Add(addTransformOnGroundedRun);
         }
         private void Update()
         {
@@ -279,13 +287,13 @@ namespace Game.Character.Implementations.Player
         }
         private void OnDestroy()
         {
-            _TargetPlayerCharacter.Grounded                 -= OnGrounded;
-            _TargetPlayerFPSObjectsController.TakenUpObject -= OnTakenUpFPSObject;
-            _TargetPlayerFPSObjectsController.PutAwayObject -= OnPutAwayFPSObject;
-            InputManager.SettedPlayerMovementInput          -= OnSettedPlayerMovementInput;
-            InputManager.SettedPlayerCameraRotateInput      -= OnSettedPlayerCameraRotateInput;
-            InputManager.SettedPlayerJumpInput              -= OnSettedPlayerJumpInput;
-            InputManager.SettedPlayerCrouchInput            -= OnSettedPlayerCrouchInput;
+            _TargetPlayerCharacter.Grounded            -= OnGrounded;
+            EventsBus.FPSObject.TakenUp.Event          -= OnTakenUpFPSObject;
+            EventsBus.FPSObject.PutedAway.Event        -= OnPutAwayFPSObject;
+            InputManager.SettedPlayerMovementInput     -= OnSettedPlayerMovementInput;
+            InputManager.SettedPlayerCameraRotateInput -= OnSettedPlayerCameraRotateInput;
+            InputManager.SettedPlayerJumpInput         -= OnSettedPlayerJumpInput;
+            InputManager.SettedPlayerCrouchInput       -= OnSettedPlayerCrouchInput;
         }
         #endregion
     }
