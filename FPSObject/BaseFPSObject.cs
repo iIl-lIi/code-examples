@@ -1,78 +1,99 @@
 ﻿using Cysharp.Threading.Tasks;
 using Game.Character.Implementations.Player;
 using Game.Input;
-using Game.StateMachine.Player;
+using Game.PlayerStateMachine;
 using OtherTools._3D.TransformAnimatorSystem;
-using UnityEngine;
 
-namespace Game.FPSObject.Implementations
+namespace Game.Item
 {
+    using UnityEngine;
+    
     public class BaseFPSObject : MonoBehaviour, IFPSObject
     {
-        [Header("FPS Object")]
-        [SerializeField] private FPSObjectIndex _Index;
-        [SerializeField] private GameObject _MeshMeshRoot;
-        [SerializeField] private TransformAnimatorsController _ShakeAnimatorsController;
-        [SerializeField] private float _ShakeFadeDuration = 0.1f;
-        
-        public FPSObjectIndex Type { get => _Index; set => _Index = value; }
-        public FPSObjectState State { get; set; }
-        public GameObject Root { get; set; }
-        public GameObject MeshRoot { get => _MeshMeshRoot; set => _MeshMeshRoot = value; }
+        [field: SerializeField, Header("FPS Object")] public ItemIndex Index { get; set; }
+        [field: SerializeField] public GameObject MeshRoot { get; set; }
+        [field: SerializeField] public TransformAnimatorFollower AnimatorsFollower { get; set; }
+        [field: SerializeField] public TransformAnimatorsController AnimatorsController { get; set; }
+        [SerializeField] protected float _AnimationsFadeDuration = 0.1f;
+        [SerializeField] protected float _StopAnimationsFadeDuration = 0.75f;
 
-        private TransformAnimator _currentControlShaker;
-        private TransformAnimator _lastPlayingShaker;
+        public GameObject Root { get; set; }
+        public FPSObjectState FPSState { get; set; }
+
+        private TransformAnimator _currentControlAnimation;
+        private TransformAnimator _lastPlayingAnimation;
         private IJoystickInput _playerMovementInput;
         private BasePlayerController _playerController;
         private bool _allowControlFactor;
 
         public virtual void Initialize()
         {
-            State = FPSObjectState.Busy;
+            FPSState = FPSObjectState.Busy;
             Root = gameObject;
             MeshRoot.SetActive(false);
             _playerMovementInput = (IJoystickInput)InputManager.PlayerMovementInput;
             _playerController = (PlayerLoader.PlayerInstance as BasePlayerCharacter).PlayerController;
-            SubscribeShake();
-            State = FPSObjectState.PuttedAway;
+            SubscribeAnimations();
+            FPSState = FPSObjectState.PuttedAway;
         }
         public virtual async UniTask TakeUp()
         {
-            if (State == FPSObjectState.Busy || MeshRoot == null) return;
-            State = FPSObjectState.Busy;
+            if (FPSState == FPSObjectState.Busy || MeshRoot == null) return;
+            FPSState = FPSObjectState.Busy;
             MeshRoot.SetActive(true);
-            SetShakerFromPlayerState();
-            State = FPSObjectState.Taken;
+            SetAnimationFromPlayerState();
+            FPSState = FPSObjectState.Taken;
         }
         public virtual async UniTask PutAway()
         {
-            if (State == FPSObjectState.Busy || MeshRoot == null) return;
-            State = FPSObjectState.Busy;
+            if (FPSState == FPSObjectState.Busy || MeshRoot == null) return;
+            FPSState = FPSObjectState.Busy;
             MeshRoot.SetActive(false);
-            StopPlayingLastShaker();
+            StopPlayingLastAnimation();
             _allowControlFactor = false;
-            State = FPSObjectState.PuttedAway;
+            FPSState = FPSObjectState.PuttedAway;
+        }
+        public void UpdateFPSObject()
+        {
+            if (_currentControlAnimation == null) return;
+            var value = _playerMovementInput.StickValue;
+            if(_allowControlFactor) _currentControlAnimation.SetFactorImmediate(value);
+            _currentControlAnimation.SetSpeedFactorImmediate(value);
         }
         
-        protected void StopPlayingLastShaker() => _lastPlayingShaker.StopAnimation();
-        protected void SetShakerFromPlayerState()
+        protected void StopPlayingLastAnimation()
         {
-            if(_lastPlayingShaker) _lastPlayingShaker.StopAnimation();
-            if(_currentControlShaker) _currentControlShaker.StopAnimation();
-            var currentPlayerShakerIndex = _playerController.CurrentState.FPSObjectShaker;
-            _lastPlayingShaker = _ShakeAnimatorsController.GetShaker(currentPlayerShakerIndex.ToString());
-            var isWalkOrCrouchMoveTo = currentPlayerShakerIndex is FPSObjectShakerType.Walk or FPSObjectShakerType.CrouchMove;
+            _lastPlayingAnimation.SetFactor(0, _StopAnimationsFadeDuration, 
+                _lastPlayingAnimation.StopAnimation);
+        }
+        
+        protected void SetAnimationFromPlayerState()
+        {
+            var currentStateAnimation = _playerController.CurrentState.FPSObjectAnimation;
+            var findAnimation = AnimatorsController.GetAnimator($"{currentStateAnimation}");
+
+            if(findAnimation == _currentControlAnimation 
+                || findAnimation ==  _lastPlayingAnimation) 
+                    return;
+
+            if (_lastPlayingAnimation) _lastPlayingAnimation.SetFactor(0, _AnimationsFadeDuration, 
+                _lastPlayingAnimation.StopAnimation);
+            if (_currentControlAnimation) _currentControlAnimation.SetFactor(0, _AnimationsFadeDuration, 
+                _currentControlAnimation.StopAnimation);
+
+            _lastPlayingAnimation = findAnimation;
+            var isWalkOrCrouchMoveTo = currentStateAnimation is FPSObjectAnimationType.Walk or FPSObjectAnimationType.CrouchMove;
 
             if (isWalkOrCrouchMoveTo)
             {
-                _currentControlShaker = _lastPlayingShaker;
+                _currentControlAnimation = _lastPlayingAnimation;
                 _allowControlFactor = true;
             }
-            else _lastPlayingShaker.SetFactor(1, _ShakeFadeDuration);
-            _lastPlayingShaker.StartAnimation();
+            else _lastPlayingAnimation.SetFactor(1, _AnimationsFadeDuration);
+            _lastPlayingAnimation.StartAnimation();
         }
-        
-        private void SubscribeShake()
+
+        private void SubscribeAnimations()
         {
             _playerController.StateSwitched += OnStateSwitched;
             _playerController.GroundedFromState += OnGroundedFromState;
@@ -82,54 +103,45 @@ namespace Game.FPSObject.Implementations
             _playerController.StateSwitched -= OnStateSwitched;
             _playerController.GroundedFromState -= OnGroundedFromState;
         }
-        private void OnStateSwitched(IBaseState from, IBaseState to)
+        private void OnStateSwitched(IState from, IState to)
         {
-            var shakerFrom = from.FPSObjectShaker;
-            var shakerTo = to.FPSObjectShaker;
-            var onGroundedTo = shakerTo is FPSObjectShakerType.OnGrounded or FPSObjectShakerType.OnGroundedRun;
+            var animationFromName = from.FPSObjectAnimation;
+            var shakerTo = to.FPSObjectAnimation;
+            var onGroundedTo = shakerTo is FPSObjectAnimationType.OnGrounded or FPSObjectAnimationType.OnGroundedRun;
 
-            if (onGroundedTo || State != FPSObjectState.Taken) return;
+            if (onGroundedTo || FPSState != FPSObjectState.Taken) return;
 
-            var shakerFromAnimator = _ShakeAnimatorsController.GetShaker(shakerFrom.ToString());
-            var onGroundedFrom = shakerFrom is FPSObjectShakerType.OnGrounded or FPSObjectShakerType.OnGroundedRun;
-            var isWalkOrCrouchMoveTo = shakerTo is FPSObjectShakerType.Walk or FPSObjectShakerType.CrouchMove;
+            var animationFrom = AnimatorsController.GetAnimator(animationFromName.ToString());
+            var onGroundedFrom = animationFromName is FPSObjectAnimationType.OnGrounded or FPSObjectAnimationType.OnGroundedRun;
+            var isWalkOrCrouchMoveTo = shakerTo is FPSObjectAnimationType.Walk or FPSObjectAnimationType.CrouchMove;
             
-            if(shakerFromAnimator == null) return;
-            if (onGroundedFrom == false) shakerFromAnimator.SetFactor(0, _ShakeFadeDuration, shakerFromAnimator.StopAnimation);
-            else if (_currentControlShaker == shakerFromAnimator)
+            if (animationFrom == null) return;
+            if (onGroundedFrom == false) animationFrom.SetFactor(0, _AnimationsFadeDuration, animationFrom.StopAnimation);
+            else if (_currentControlAnimation == animationFrom)
             {
-                _currentControlShaker.StopAnimation();
+                animationFrom.SetFactor(0, _AnimationsFadeDuration, animationFrom.StopAnimation);
                 _allowControlFactor = false;
             }
             
-            _lastPlayingShaker = _ShakeAnimatorsController.GetShaker(shakerTo.ToString());
-            if(shakerFromAnimator == null || _lastPlayingShaker == null) return;
+            _lastPlayingAnimation = AnimatorsController.GetAnimator(shakerTo.ToString());
+            if (animationFrom == null || _lastPlayingAnimation == null) return;
             if (isWalkOrCrouchMoveTo)
             {
-                _currentControlShaker = _lastPlayingShaker;
+                _currentControlAnimation = _lastPlayingAnimation;
                 _allowControlFactor = true;
             }
-            else _lastPlayingShaker.SetFactor(1, _ShakeFadeDuration);
-            _lastPlayingShaker.StartAnimation();
+            else _lastPlayingAnimation.SetFactor(1, _AnimationsFadeDuration);
+            _lastPlayingAnimation.StartAnimation();
         }
-        private void OnGroundedFromState(IBaseState state)
+        private void OnGroundedFromState(IState state)
         {
-            if (State != FPSObjectState.Taken) return;
-            _ShakeAnimatorsController.Stop(FPSObjectShakerType.JumpIn.ToString(), _ShakeFadeDuration);
-            _ShakeAnimatorsController.Stop(FPSObjectShakerType.JumpRunIn.ToString(), _ShakeFadeDuration);
-            _ShakeAnimatorsController.Play(state.FPSObjectShaker.ToString(), _ShakeFadeDuration);
+            if (FPSState != FPSObjectState.Taken) return;
+            AnimatorsController.Stop(FPSObjectAnimationType.JumpIn.ToString(), _AnimationsFadeDuration);
+            AnimatorsController.Stop(FPSObjectAnimationType.JumpRunIn.ToString(), _AnimationsFadeDuration);
+            AnimatorsController.Play(state.FPSObjectAnimation.ToString(), _AnimationsFadeDuration);
         }
 
-        public virtual void Update()
-        {
-            if (_currentControlShaker == null) return;
-            var value = _playerMovementInput.StickValue;
-            if(_allowControlFactor) _currentControlShaker.SetFactorImmediate(value);
-            _currentControlShaker.SetSpeedFactorImmediate(value);
-        }
-        public virtual void OnDestroy()
-        {
-            UnsubscribeShake();
-        }
+        protected virtual void Update() => UpdateFPSObject();
+        protected virtual void OnDestroy() => UnsubscribeShake();
     }
 }
