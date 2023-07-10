@@ -24,7 +24,7 @@ public static class BinarySaveSystem
     public static T Load<T>(string path) where T : new()
     {
         var loadPath = $"{_directoryPath}{path}";
-        if(!File.Exists(loadPath)) return new();
+        if(!File.Exists(loadPath)) return default;
         using(var stream = File.Open(loadPath, FileMode.Open))
             return (T)_formater.Deserialize(stream);
     }
