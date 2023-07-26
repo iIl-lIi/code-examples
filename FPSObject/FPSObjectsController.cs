@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using Game.Item;
+using UnityEngine;
 
-namespace Game.Item
+namespace Game.FPSObject
 {
     public class FPSObjectsController : MonoBehaviour
     {
@@ -16,7 +17,7 @@ namespace Game.Item
             IsBusy = true;
 
             await TargetObject.TakeUp();
-            EventsBus.FPSObject.TakenUp.Invoke(TargetObject);
+            FPSObjectEvents.TakenUp.Invoke(TargetObject);
             IsBusy = false;
         }
         private async void PutAway()
@@ -25,7 +26,7 @@ namespace Game.Item
             IsBusy = true;
 
             await TargetObject.PutAway();
-            EventsBus.FPSObject.PutedAway.Invoke(TargetObject);
+            FPSObjectEvents.PutedAway.Invoke(TargetObject);
             IsBusy = false;
         }
 

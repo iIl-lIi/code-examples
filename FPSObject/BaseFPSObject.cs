@@ -72,7 +72,7 @@ namespace Game.Item
             var currentStateAnimation = _playerController.CurrentState.FPSObjectAnimation;
             var findAnimation = AnimatorsController.GetAnimator($"{currentStateAnimation}");
 
-            if(findAnimation == _currentControlAnimation 
+            if (findAnimation == _currentControlAnimation 
                 || findAnimation ==  _lastPlayingAnimation) 
                     return;
 
