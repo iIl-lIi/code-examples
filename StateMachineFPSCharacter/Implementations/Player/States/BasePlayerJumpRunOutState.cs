@@ -1,20 +1,14 @@
 ﻿using Game.Item;
-using Game.PlayerStateMachine;
 
 namespace Game.Character.Implementations.Player.States
 {
-    public class BasePlayerJumpRunOutState : IState
-    { 
-        public FPSObjectAnimationType FPSObjectAnimation { get; set; } = FPSObjectAnimationType.OnGroundedRun;
+    public class BasePlayerJumpRunOutState : AbstractPlayerState
+    {
+        public override FPSObjectAnimationType FPSObjectAnimation { get; set; } = FPSObjectAnimationType.OnGroundedRun;
         
-        public void Enter(IState fromState)
-        {
-        }
-        public void Exit(IState toState)
-        {
-        }
-        public void Update()
-        {
-        }
+        public override string CameraAnimationName { get; set; }
+        public override float AnimationCrossFadeDuration { get; set; }
+        
+        public BasePlayerJumpRunOutState(BasePlayerController playerController) : base(playerController) { }
     }
 }

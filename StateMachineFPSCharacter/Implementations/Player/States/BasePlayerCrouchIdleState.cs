@@ -1,54 +1,40 @@
 ﻿using Game.Item;
 using Game.PlayerStateMachine;
-using OtherTools._3D.TransformAnimatorSystem;
 
 namespace Game.Character.Implementations.Player.States
 {
-    public class BasePlayerCrouchIdleState : IState
+    public class BasePlayerCrouchIdleState : AbstractPlayerState
     {
         private const string CAMERA_SHAKER_NAME = "CrouchIdleCamera";
         private const float CAMERA_SHAKER_CROSS_FADE_DURATION = 0.1f;
         
-        public FPSObjectAnimationType FPSObjectAnimation { get; set; } = FPSObjectAnimationType.CrouchIdle;
+        public override string CameraAnimationName { get; set; }
+        public override float AnimationCrossFadeDuration { get; set; }
+        public override FPSObjectAnimationType FPSObjectAnimation { get; set; } = FPSObjectAnimationType.CrouchIdle;
 
-        private readonly BasePlayerController _playerController;
-        private readonly TransformAnimatorsController _animatorController;
+        public BasePlayerCrouchIdleState(BasePlayerController playerController) : base(playerController) { }
 
-        public BasePlayerCrouchIdleState(TransformAnimatorsController animatorController, BasePlayerController playerController)
+        public override void Enter(IState fromState)
         {
-            this._playerController = playerController;
-            this._animatorController = animatorController;
-            
-            var target = animatorController.GetAnimator(CAMERA_SHAKER_NAME).Target;
-            playerController.TargetPlayerCharacter.AddOffsets.Add(new AddOffset()
-            {
-                UseParameters = UseTransformParameters.Everything,
-                GetPosition = () => target.localPosition,
-                GetRotation = () => target.localRotation
-            });
+            playerController.TargetPlayerCharacter.Crouch(true);
+            base.Enter(fromState);
         }
-
-        public void Enter(IState fromState)
+        public override void Exit(IState toState)
         {
-            _playerController.TargetPlayerCharacter.Crouch(true);
-            _animatorController.Play(CAMERA_SHAKER_NAME, CAMERA_SHAKER_CROSS_FADE_DURATION);
-        }
-        public void Exit(IState toState)
-        {
-            _animatorController.Stop(CAMERA_SHAKER_NAME, CAMERA_SHAKER_CROSS_FADE_DURATION);
+            base.Exit(toState);
             if (toState is BasePlayerCrouchMoveState) return;
-            _playerController.TargetPlayerCharacter.Crouch(false);
+            playerController.TargetPlayerCharacter.Crouch(false);
         }
-        public void Update()
+        public override void Update()
         {
             if (BasePlayerController.CrouchMovement)
             {
-                _playerController.SwitchState<BasePlayerCrouchMoveState>();
+                playerController.SwitchState<BasePlayerCrouchMoveState>();
                 return;
             }
             
             if (BasePlayerController.IsCrouch) return;
-            _playerController.SwitchState<BasePlayerIdleState>();
+            playerController.SwitchState<BasePlayerIdleState>();
         }
     }
 }

@@ -14,11 +14,24 @@ namespace Game.Character
 
     [Serializable] public class AddOffset
     {
-        public UseTransformParameters UseParameters;
+        public readonly string Id;
+        public readonly UseTransformParameters UseParameters;
+        public Func<Vector3> GetPosition;
+        public Func<Quaternion> GetRotation;
         public Vector3 OffsetPosition;
         public Vector3 OffsetRotation;
-        public Func<Vector3> GetPosition = () => Vector3.zero;
-        public Func<Quaternion> GetRotation = () => Quaternion.identity;
+
+        public AddOffset(string id, UseTransformParameters parameters = default, 
+                         Func<Vector3> getPosition = default, Func<Quaternion> getRotation = default,
+                         Vector3 offsetPosition = default, Vector3 offsetRotation = default)
+        {
+            Id = id;
+            UseParameters = parameters;
+            GetPosition = getPosition == default ? () => Vector3.zero : getPosition;
+            GetRotation = getRotation == default ? () => Quaternion.identity : getRotation;
+            OffsetPosition = offsetPosition;
+            OffsetRotation = offsetRotation;
+        }
     }
     public interface ICameraRotate
     {

@@ -19,8 +19,8 @@ namespace Game.Character.Implementations.Player
         [SerializeField] private float _JumpLength = 10f;
         [SerializeField] private Vector3 _GravityValue = Vector3.down;
 
-        [Header("Player Camera")]
-        [SerializeField] private TransformAnimatorsController _AnimatorsController;
+        [field: SerializeField, Header("Player Camera")] 
+        public TransformAnimatorsController AnimatorsController { get; private set; }
 
 #if UNITY_DEBUG
         [Space]
@@ -84,22 +84,22 @@ namespace Game.Character.Implementations.Player
             CurrentState = toState;
             toState.Enter(fromState);
             StateSwitched?.Invoke(fromState, toState);
-            EventsBus.Player.StateSwitched.Invoke(fromState, toState);
+            PlayerEvents.StateSwitched.Invoke(fromState, toState);
         }
 
         private void SetStates()
         {
             States = new List<IState>()
             {
-                new BasePlayerIdleState      (_AnimatorsController, this),
-                new BasePlayerWalkState      (_AnimatorsController, this),
-                new BasePlayerRunState       (_AnimatorsController, this),
-                new BasePlayerJumpInState    (_AnimatorsController, this),
-                new BasePlayerJumpOutState   (),
-                new BasePlayerJumpRunInState (_AnimatorsController, this),
-                new BasePlayerJumpRunOutState(),
-                new BasePlayerCrouchIdleState(_AnimatorsController, this),
-                new BasePlayerCrouchMoveState(_AnimatorsController, this),
+                new BasePlayerIdleState      (this),
+                new BasePlayerWalkState      (this),
+                new BasePlayerRunState       (this),
+                new BasePlayerJumpInState    (this),
+                new BasePlayerJumpOutState   (this),
+                new BasePlayerJumpRunInState (this),
+                new BasePlayerJumpRunOutState(this),
+                new BasePlayerCrouchIdleState(this),
+                new BasePlayerCrouchMoveState(this),
             };
         }
         #endregion
@@ -221,9 +221,9 @@ namespace Game.Character.Implementations.Player
         private void OnGroundedFromState()
         {
             if(CurrentState.FPSObjectAnimation == FPSObjectAnimationType.OnGroundedRun)
-                _AnimatorsController.Play(CAMERA_ON_GROUNDED_RUN_SHAKER_NAME, CAMERA_ON_GROUNDED_RUN_SHAKER_FADE_IN_DURATION);
+                AnimatorsController.Play(CAMERA_ON_GROUNDED_RUN_SHAKER_NAME, CAMERA_ON_GROUNDED_RUN_SHAKER_FADE_IN_DURATION);
             else if(CurrentState.FPSObjectAnimation == FPSObjectAnimationType.OnGrounded)
-                _AnimatorsController.Play(CAMERA_ON_GROUNDED_SHAKER_NAME, CAMERA_ON_GROUNDED_SHAKER_FADE_IN_DURATION);
+                AnimatorsController.Play(CAMERA_ON_GROUNDED_SHAKER_NAME, CAMERA_ON_GROUNDED_SHAKER_FADE_IN_DURATION);
             
             GroundedFromState?.Invoke(CurrentState);
         }
@@ -251,28 +251,29 @@ namespace Game.Character.Implementations.Player
             SetStates();
             SwitchState<BasePlayerIdleState>();
             _TargetPlayerCharacter.Grounded            += OnGrounded;
-            EventsBus.FPSObject.TakenUp.Event          += OnTakenUpFPSObject;
-            EventsBus.FPSObject.PutedAway.Event        += OnPutAwayFPSObject;
+            FPSObjectEvents.TakenUp.Event              += OnTakenUpFPSObject;
+            FPSObjectEvents.PutedAway.Event            += OnPutAwayFPSObject;
             InputManager.SettedPlayerMovementInput     += OnSettedPlayerMovementInput;
             InputManager.SettedPlayerCameraRotateInput += OnSettedPlayerCameraRotateInput;
             InputManager.SettedPlayerJumpInput         += OnSettedPlayerJumpInput;
             InputManager.SettedPlayerCrouchInput       += OnSettedPlayerCrouchInput;
 
-            var targetGround = _AnimatorsController.GetAnimator(CAMERA_ON_GROUNDED_SHAKER_NAME).Target;
-            var targetGroundRun = _AnimatorsController.GetAnimator(CAMERA_ON_GROUNDED_RUN_SHAKER_NAME).Target;
-            var addTransformOnGrounded = new AddOffset() 
-            {
-                UseParameters = UseTransformParameters.Everything,
-                GetPosition = () => targetGround.localPosition,
-                GetRotation = () => targetGround.localRotation
-                
-            };
-            var addTransformOnGroundedRun = new AddOffset()
-            {
-                UseParameters = UseTransformParameters.Everything,
-                GetPosition = () => targetGroundRun.localPosition,
-                GetRotation = () => targetGroundRun.localRotation
-            };
+            var targetGround = AnimatorsController.GetAnimator(CAMERA_ON_GROUNDED_SHAKER_NAME).Target;
+            var targetGroundRun = AnimatorsController.GetAnimator(CAMERA_ON_GROUNDED_RUN_SHAKER_NAME).Target;
+            var addTransformOnGrounded = new AddOffset
+            (
+                CAMERA_ON_GROUNDED_SHAKER_NAME,
+                UseTransformParameters.Everything,
+                () => targetGround.localPosition,
+                () => targetGround.localRotation
+            );
+            var addTransformOnGroundedRun = new AddOffset
+            (
+                CAMERA_ON_GROUNDED_RUN_SHAKER_NAME,
+                UseTransformParameters.Everything,
+                () => targetGroundRun.localPosition,
+                () => targetGroundRun.localRotation
+            );
             
             _TargetPlayerCharacter.AddOffsets.Add(addTransformOnGrounded);
             _TargetPlayerCharacter.AddOffsets.Add(addTransformOnGroundedRun);
@@ -288,8 +289,8 @@ namespace Game.Character.Implementations.Player
         private void OnDestroy()
         {
             _TargetPlayerCharacter.Grounded            -= OnGrounded;
-            EventsBus.FPSObject.TakenUp.Event          -= OnTakenUpFPSObject;
-            EventsBus.FPSObject.PutedAway.Event        -= OnPutAwayFPSObject;
+            FPSObjectEvents.TakenUp.Event              -= OnTakenUpFPSObject;
+            FPSObjectEvents.PutedAway.Event            -= OnPutAwayFPSObject;
             InputManager.SettedPlayerMovementInput     -= OnSettedPlayerMovementInput;
             InputManager.SettedPlayerCameraRotateInput -= OnSettedPlayerCameraRotateInput;
             InputManager.SettedPlayerJumpInput         -= OnSettedPlayerJumpInput;
