@@ -7,7 +7,7 @@ using UnityEngine.AddressableAssets;
 
 namespace Game
 {
-    public class GameStarter : MonoBehaviour
+    public class EntryPoint : MonoBehaviour
     {
         [SerializeField] private string _MenuSceneName = "Menu";
         [SerializeField] private AssetReference _PlayerPrefab;
@@ -15,7 +15,7 @@ namespace Game
         [SerializeField] private ContainersList _UIContainers;
         [SerializeField] private LightingDataList _LightingDataList;
 
-        private async void Awake() // starter :)
+        private async void Awake()
         {
             Application.targetFrameRate = 144;
             UIController.Initialize(_UIRoot, _UIContainers);
