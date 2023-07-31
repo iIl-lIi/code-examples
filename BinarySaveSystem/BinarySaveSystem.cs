@@ -1,3 +1,4 @@
+using Extensions;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -5,30 +6,29 @@ using UnityEngine;
 
 public static class BinarySaveSystem
 {
-    private static string _directoryPath;
-    private static BinaryFormatter _formater;
-
-    public static void Initialize()
-    {
-        _directoryPath = $"{Application.persistentDataPath}/saves/"; 
-        if(!Directory.Exists(_directoryPath)) Directory.CreateDirectory(_directoryPath);
-        _formater = GetFormatter();
-    }
+    private static readonly BinaryFormatter _formater = GetFormatter();
 
     public static void Save(object data, string path)
     {
-        var savePath = $"{_directoryPath}{path}";
-        using(var stream = File.Create(savePath)) 
+        CheckDirectory(path);
+        using(var stream = File.Create(path)) 
             _formater.Serialize(stream, data);
     }
     public static T Load<T>(string path) where T : new()
     {
-        var loadPath = $"{_directoryPath}{path}";
-        if(!File.Exists(loadPath)) return default;
-        using(var stream = File.Open(loadPath, FileMode.Open))
+        CheckDirectory(path);
+        if(!File.Exists(path)) return new();
+        using(var stream = File.Open(path, FileMode.Open))
             return (T)_formater.Deserialize(stream);
     }
     
+    private static void CheckDirectory(string path)
+    {
+        var fileFullName = path.GetFileFullNameFromPath();
+        var correctPath = path.RemoveRight(fileFullName);
+        if (Directory.Exists(correctPath)) return;
+        Directory.CreateDirectory(correctPath);
+    }
     private static BinaryFormatter GetFormatter()
     {
         var b = new BinaryFormatter();
