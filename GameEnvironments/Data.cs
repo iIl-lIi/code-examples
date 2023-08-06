@@ -1,73 +1,41 @@
 using System;
+using UnityEditor;
 
 namespace GameEnvironments
 {
     [Serializable]
     public sealed class Data
     {
-        private const string FileFolder = "ProjectSettings/";
-        private const string FileName = "environment";
-        private static string FilePath = FileFolder + FileName;
-
-        public string currentEnvironment = Develop.Define;
-        public bool menuItemsUpdated;
-        public bool isLaunched;
-        public bool allowSwitch;
-        public bool badQuitting;
-
-        private Data ChangeCurrentEnvironment(string env)
-        {
-            currentEnvironment = env;
-            return this;
-        }
-        private Data ChangeMenuItemsUpdated(bool miu)
-        {
-            menuItemsUpdated = miu;
-            return this;
-        }
-        private Data ChangeIsLaunched(bool isl)
-        {
-            isLaunched = isl;
-            return this;
-        }
-        private Data ChangeAllowSwitch(bool als)
-        {
-            allowSwitch = als;
-            return this;
-        }
-        private Data ChangeBadQuitting(bool bqt)
-        {
-            badQuitting = bqt;
-            return this;
-        }
-        
-        private static Data Get() => JsonSaveSystem.Load<Data>(FilePath);
-        private static void Set(Data data) => JsonSaveSystem.Save(data, FilePath);
+        private const string CurrentEnvironmentKey = "environment.currentEnvironment";
+        private const string IsLaunchedKey         = "environment.isLaunched";
+        private const string MenuItemsUpdatedKey   = "environment.menuItemsUpdated";
+        private const string AllowSwitchKey        = "environment.allowSwitch";
+        private const string BadQuittingKey        = "environment.badQuitting";
 
         public static string CurrentEnvironment
         { 
-            get => Get().currentEnvironment; 
-            set => Set(Get().ChangeCurrentEnvironment(value));
+            get => EditorPrefs.GetString(CurrentEnvironmentKey, Develop.Define);
+            set => EditorPrefs.SetString(CurrentEnvironmentKey, value);
         }
         public static bool MenuItemsUpdated
         { 
-            get => Get().menuItemsUpdated; 
-            set => Set(Get().ChangeMenuItemsUpdated(value));
-        }
-        public static bool IsLaunched
-        { 
-            get => Get().isLaunched; 
-            set => Set(Get().ChangeIsLaunched(value));
+            get => EditorPrefs.GetBool(MenuItemsUpdatedKey);
+            set => EditorPrefs.SetBool(MenuItemsUpdatedKey, value);
         }
         public static bool AllowSwitch
         { 
-            get => Get().allowSwitch; 
-            set => Set(Get().ChangeAllowSwitch(value));
+            get => EditorPrefs.GetBool(AllowSwitchKey);
+            set => EditorPrefs.SetBool(AllowSwitchKey, value);
         }
         public static bool BadQuitting
         { 
-            get => Get().badQuitting; 
-            set => Set(Get().ChangeBadQuitting(value));
+            get => EditorPrefs.GetBool(BadQuittingKey);
+            set => EditorPrefs.SetBool(BadQuittingKey, value);
+        }
+        public static bool IsLaunched
+        { 
+            get => EditorPrefs.GetBool(IsLaunchedKey);
+            set => EditorPrefs.SetBool(IsLaunchedKey, value);
         }
     }   
 }

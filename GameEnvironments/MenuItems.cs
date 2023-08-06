@@ -1,7 +1,6 @@
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
-using UnityEditor.Callbacks;
 using UnityEngine;
 
 namespace GameEnvironments
@@ -25,7 +24,7 @@ namespace GameEnvironments
         { 
             EditorApplication.delayCall += OnDelayReload;
             EditorApplication.delayCall += OnDelayLaunch;
-            EditorApplication.quitting += OnApplicationQuitting;
+            EditorApplication.quitting  += OnApplicationQuitting;
         }
 
         private static void SetDefineSymbols(string symbols)
@@ -47,7 +46,7 @@ namespace GameEnvironments
             var newEnvironment = $"{EnvironmentKey}{toEnvironmentDefine}";
             if (!defineSymbols.Contains(EnvironmentKey))
             {
-                SetDefineSymbols($"{defineSymbols};{newEnvironment}");
+                SetDefineSymbols($"{defineSymbols};{newEnvironment}"); 
                 OnSwitchEnvironment(toEnvironmentDefine);
                 return;
             }
@@ -117,8 +116,8 @@ namespace GameEnvironments
             UpdateMenuItems();
         }
 
-        [MenuItem(Develop.Path)] private static void SetDevelopEnvironment() => SwitchEnvironment(Develop.Define);     
-        [MenuItem(Testing.Path)] private static void SetTestingEnvironment() => SwitchEnvironment(Testing.Define);  
+        [MenuItem(Develop.Path)]    private static void SetDevelopEnvironment()    => SwitchEnvironment(Develop.Define);     
+        [MenuItem(Testing.Path)]    private static void SetTestingEnvironment()    => SwitchEnvironment(Testing.Define);  
         [MenuItem(Production.Path)] private static void SetProductionEnvironment() => SwitchEnvironment(Production.Define);
     }
 }
