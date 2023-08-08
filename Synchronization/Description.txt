@@ -1,0 +1,2 @@
+Can be a useful tool if you need to synchronize constants in multiple files in different programming languages.
+Shader "#define" synchronization as example.
